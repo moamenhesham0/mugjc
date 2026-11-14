@@ -1,0 +1,40 @@
+---
+BasedOnStyle: Google
+Language: Cpp
+Standard: c++20
+
+# Indentation & Spacing
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 80
+AccessModifierOffset: -4
+
+# Braces & Control Flow
+BreakBeforeBraces: Attach
+AllowShortBlocksOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+# Pointer / Reference alignment (Google style: type* var, type& var)
+DerivePointerAlignment: false
+PointerAlignment: Left
+
+# Include Sorting (Groups: C system headers, C++ standard headers, project headers)
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<.*\.h>'
+    Priority: 1
+  - Regex: '^<.*>'
+    Priority: 2
+  - Regex: '.*'
+    Priority: 3
+
+# Modern C++ Cleanliness
+FixNamespaceComments: true
+SpacesInAngles: false
+KeepEmptyLinesAtTheStartOfBlocks: false
+CompactNamespaces: false
+...
