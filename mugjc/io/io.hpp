@@ -7,11 +7,13 @@
 #include <optional>
 #include <string>
 
-namespace mugjc::io {
-static std::optional<std::string> ReadFile(std::string const& path);
+namespace mug::io {
+// Returns the whole file, or std::nullopt if it cannot be read.
+std::optional<std::string> ReadFile(std::string const& path);
 
-[[nodiscard]] static bool WriteFile(std::string const& path,
-                                    std::string const& content);
-}  // namespace mugjc::io
+// Overwrites the file. Returns false on failure.
+[[nodiscard]] bool WriteFile(std::string const& path,
+                             std::string const& content);
+}  // namespace mug::io
 
 #endif  // MUGJC_IO_HPP

@@ -11,7 +11,7 @@
 #include <string>
 
 namespace mug::io {
-static std::optional<std::string> ReadFile(std::string const& path) {
+std::optional<std::string> ReadFile(std::string const& path) {
     // Validate location
     if (!std::filesystem::exists(path)) {
         return std::nullopt;
@@ -36,8 +36,13 @@ static std::optional<std::string> ReadFile(std::string const& path) {
 
     return content;
 }
-[[nodiscard]] static bool WriteFile(std::string const& path) {
-    // TODO
-    return true;
+
+bool WriteFile(std::string const& path, std::string const& content) {
+    std::ofstream file(path, std::ios::binary | std::ios::trunc);
+    if (!file.is_open()) {
+        return false;
+    }
+    file.write(content.data(), content.size());
+    return static_cast<bool>(file);
 }
 }  // namespace mug::io
