@@ -4,6 +4,7 @@
 
 #ifndef MUGJC_NFA_HPP
 #define MUGJC_NFA_HPP
+#include <array>
 #include <limits>
 #include <optional>
 #include <string>
@@ -17,12 +18,17 @@ using Token = std::string;
 using StateId = size_t;
 
 static constexpr size_t TrapState = std::numeric_limits<StateId>::max();
-static constexpr size_t InputRange = sizeof(char) + 1;
+static constexpr size_t InputRange =
+    std::numeric_limits<unsigned char>::max() + 1;
 class NFA {
+    NFA();
+
 public:
 private:
+    StateId startState_;
     std::unordered_map<StateId, Token> acceptingStates_;
-    std::vector<std::array<StateId, InputRange>> table_;
+    std::vector<std::array<std::vector<StateId>, InputRange>> transitions_;
+    std::vector<std::vector<StateId>> lambdaTransitions_;
 };
 }  // namespace mug::lexer::FA
 
