@@ -5,15 +5,13 @@
 #include "lexer_rules.hpp"
 
 namespace mug::lexer::rule {
-
-mug::lexer::rule::Rule CreateRegexRule(const std::string_view token_class,
-                                       std::string regex_body,
-                                       size_t priority) {
+static mug::lexer::rule::Rule CreateRegexRule(
+    const std::string_view token_class, ASTNode root, size_t priority) {
     return Rule{
         .type = RuleType::kRegularExpression,
         .tokenClass_ = std::string(token_class),
         .priority_ = priority,
-        .ast_ = mug::lexer::AST(regex_body),
+        .ast_ = mug::lexer::AST(std::move(root)),
     };
 }
 

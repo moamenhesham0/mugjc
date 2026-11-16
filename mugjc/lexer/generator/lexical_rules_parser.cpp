@@ -8,25 +8,28 @@
 #include <iterator>
 #include <optional>
 #include <sstream>
+#include <utility>
 
 mug::lexer::LexicalRulesParser::LexicalRulesParser(const std::string_view rules)
-    : rules_(rules), cursor_(0) {}
+    : rules_(rules), cursor_(0), priority_(0) {}
 
-void mug::lexer::LexicalRulesParser::set_rules(std::string_view rules) {
+void mug::lexer::LexicalRulesParser::set_rules(const std::string_view rules) {
     this->rules_ = rules;
     this->cursor_ = 0;
 }
 
-mug::lexer::rule::RuleType DefineRule(std::string_view raw_rule) {
+static mug::lexer::rule::RuleType DefineRule(const std::string_view raw_rule) {
     if (raw_rule.empty()) {
         return mug::lexer::rule::RuleType::kUnknown;
     }
 
-    if (raw_rule.front() == mug::lexer::rule::Symbol::kLeftCurly) {
+    if (raw_rule.front() ==
+        std::to_underlying(mug::lexer::rule::Symbol::kLeftCurly)) {
         return mug::lexer::rule::RuleType::kKeyword;
     }
 
-    if (raw_rule.front() == mug::lexer::rule::Symbol::kLeftSquare) {
+    if (raw_rule.front() ==
+        std::to_underlying(mug::lexer::rule::Symbol::kLeftSquare)) {
         return mug::lexer::rule::RuleType::kPunctuation;
     }
 
@@ -38,8 +41,9 @@ mug::lexer::rule::RuleType DefineRule(std::string_view raw_rule) {
 }
 
 mug::lexer::rule::Rule mug::lexer::LexicalRulesParser::KeywordRule(
-    std::string_view raw_rule) {
-    if (raw_rule.back() != mug::lexer::rule::Symbol::kRightCurly) {
+    const std::string_view raw_rule) {
+    if (raw_rule.back() !=
+        std::to_underlying(mug::lexer::rule::Symbol::kRightCurly)) {
         // TODO Throw ERROR
     }
 
@@ -63,11 +67,13 @@ mug::lexer::rule::Rule mug::lexer::LexicalRulesParser::KeywordRule(
 }
 
 mug::lexer::rule::Rule mug::lexer::LexicalRulesParser::LiteralPunctuationRule(
-    rule::Literal symbol) {
+    const rule::Literal symbol) {
     if (isalnum(symbol)) {
         // TODO ERROR
     }
-    if (rule::REOperators.contains(static_cast<rule::REOperator>(symbol))) {
+
+    if (rule::IsREOperator(symbol) || symbol ==
+        std::to_underlying(mug::lexer::rule::Symbol::kEscape)) {
         // TODO ERROR
     }
 
@@ -75,29 +81,31 @@ mug::lexer::rule::Rule mug::lexer::LexicalRulesParser::LiteralPunctuationRule(
 }
 
 mug::lexer::rule::Rule mug::lexer::LexicalRulesParser::EscapedPunctuationRule(
-    std::string_view symbol) {
-    if (symbol.front() != mug::lexer::rule::Symbol::kEscape) {
+    const std::string_view symbol) {
+    if (symbol.front() !=
+        std::to_underlying(mug::lexer::rule::Symbol::kEscape)) {
         // TODO ERROR
     }
 
-    if (rule::REOperators.contains(
-            static_cast<rule::REOperator>(symbol.back()))) {
-        return rule::CreatePunctuationRule(symbol.back(), this->priority_++);
+    if (!(rule::IsREOperator(symbol.back()) ||
+        symbol.back() == std::to_underlying(rule::Symbol::kEscape))) {
+        // TODO ERROR
     }
 
-    // TODO ERROR
+    return rule::CreatePunctuationRule(symbol.back(), this->priority_++);
 }
 
 mug::lexer::rule::Rule mug::lexer::LexicalRulesParser::PunctuationRule(
-    std::string_view raw_rule) {
-    if (raw_rule.back() != mug::lexer::rule::Symbol::kRightSquare) {
+    const std::string_view raw_rule) {
+    if (raw_rule.back() !=
+        std::to_underlying(mug::lexer::rule::Symbol::kRightSquare)) {
         // TODO Throw ERROR
     }
 
-    auto content = raw_rule.substr(1, raw_rule.size() - 2);
+    const auto content = raw_rule.substr(1, raw_rule.size() - 2);
     std::istringstream iss{std::string(content)};
-    std::vector<std::string> symbols{std::istream_iterator<std::string>{iss},
-                                     {}};
+    const std::vector<std::string> symbols{
+        std::istream_iterator<std::string>{iss}, {}};
 
     for (auto& symbol : symbols) {
         switch (symbol.size()) {
@@ -135,8 +143,8 @@ bool mug::lexer::LexicalRulesParser::IsValidIdentifier(std::string_view name) {
 }
 
 std::string mug::lexer::LexicalRulesParser::TokenClass(
-    std::string_view raw_rule) {
-    size_t token_class_size = raw_rule.find_first_of(":=");
+    const std::string_view raw_rule) {
+    const size_t token_class_size = raw_rule.find_first_of(":=");
     if (token_class_size == std::string_view::npos) {
         // TODO ERROR
         return "";
@@ -161,12 +169,13 @@ std::string mug::lexer::LexicalRulesParser::TokenClass(
     return std::string(token_class);
 }
 
-std::string RemoveWhitespace(std::string token_body) {
+static std::string RemoveWhitespace(std::string token_body) {
     std::erase_if(token_body, [](unsigned char c) { return std::isspace(c); });
     return token_body;
 }
 
-mug::lexer::rule::RuleType RegularStatementType(std::string_view raw_rule) {
+static mug::lexer::rule::RuleType RegularStatementType(
+    std::string_view raw_rule) {
     size_t symbol_index = raw_rule.find_first_of("=:");
 
     if (symbol_index == std::string_view::npos) {
@@ -174,7 +183,7 @@ mug::lexer::rule::RuleType RegularStatementType(std::string_view raw_rule) {
     }
 
     if (raw_rule[symbol_index] ==
-        mug::lexer::rule::Symbol::kRegularExpression) {
+        std::to_underlying(mug::lexer::rule::Symbol::kRegularExpression)) {
         return mug::lexer::rule::RuleType::kRegularExpression;
     }
 
@@ -183,7 +192,7 @@ mug::lexer::rule::RuleType RegularStatementType(std::string_view raw_rule) {
 
 void mug::lexer::LexicalRulesParser::AddDefinition(
     const std::string& token_class, const std::string& token_body) {
-    if (this->definitions_.find(token_class) != this->definitions_.end()) {
+    if (this->definitions_.contains(token_class)) {
         // TODO ERROR
     }
 
@@ -191,12 +200,13 @@ void mug::lexer::LexicalRulesParser::AddDefinition(
 }
 
 std::string mug::lexer::LexicalRulesParser::ReplaceDefinitionWithBody(
-    std::string_view token_body) {
+    const std::string_view token_body) {
     std::string new_token_body;
     std::string definition_class;
 
     for (auto& c : token_body) {
-        if (std::isalnum(c) || c == '_') {
+        if (std::isalnum(c) ||
+            c == std::to_underlying(rule::Symbol::kUnderscore)) {
             definition_class += c;
             continue;
         }
@@ -236,8 +246,13 @@ mug::lexer::ASTNode mug::lexer::LexicalRulesParser::BuildRegexAST(
 
     bool escaped = false;
     for (auto& c : token_body) {
-        if (rule::REOperators.contains(static_cast<rule::REOperator>(c)) &&
-            !escaped) {
+        if (c == std::to_underlying(rule::Symbol::kEscape)) {
+            escaped = true;
+            continue;
+        }
+
+        if (escaped && (rule::IsREOperator(c) ||
+                        c == std::to_underlying(rule::Symbol::kEscape))) {
         }
     }
 }
@@ -254,15 +269,15 @@ mug::lexer::LexicalRulesParser::RegularStatement(std::string_view raw_rule) {
     std::string token_body =
         std::string(raw_rule.substr(raw_rule.find_first_of("=:")));
 
-    std::pair<std::vector<rule::REOperator>, std::vector<ASTNode>> regex_stack =
-        BuildRegexStack(token_body, type);
+    auto ast = BuildRegexAST(token_body, type);
 
     if (type == rule::RuleType::kRegularDefinition) {
         AddDefinition(token_class, token_body);
         return std::nullopt;
     }
 
-    return std::nullopt;
+    return rule::CreateRegexRule(token_class, std::move(ast),
+                                 this->priority_++);
 }
 
 std::optional<mug::lexer::rule::Rule>
@@ -273,9 +288,7 @@ mug::lexer::LexicalRulesParser::NextRule() {
     const std::string_view raw_rule = rules_.substr(start, end);
 
     // Define type
-    mug::lexer::rule::RuleType type = DefineRule(raw_rule);
-
-    switch (type) {
+    switch (DefineRule(raw_rule)) {
         case mug::lexer::rule::RuleType::kPunctuation:
             return PunctuationRule(raw_rule);
 

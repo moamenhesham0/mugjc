@@ -27,7 +27,7 @@ private:
     mug::lexer::rule::RuleType RuleType(std::string_view rule);
     std::string_view rules_;
     size_t cursor_;
-    size_t priority_;
+    size_t priority_{};
     std::unordered_map<std::string, std::string> definitions_;
     std::queue<mug::lexer::rule::Rule> pending_rules_;
 
@@ -39,7 +39,8 @@ private:
     std::string ReplaceDefinitionWithBody(std::string_view token_body);
 
     mug::lexer::ASTNode BuildRegexAST(std::string token_body,
-                                        rule::RuleType rule_type);
+                                      rule::RuleType rule_type);
+    mug::lexer::ASTNode BuildTextAST(const std::string body);
     std::optional<mug::lexer::rule::Rule> RegularStatement(
         std::string_view raw_rule);
     mug::lexer::rule::Rule LiteralPunctuationRule(rule::Literal symbol);

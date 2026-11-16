@@ -20,7 +20,8 @@ struct Rule {
 };
 
 mug::lexer::rule::Rule CreateRegexRule(const std::string_view token_class,
-                                       std::string regex_body, size_t priority);
+                                       mug::lexer::ASTNode root,
+                                       size_t priority);
 
 mug::lexer::rule::Rule CreatePunctuationRule(
     const mug::lexer::rule::Literal punctuation_symbol, size_t priority);

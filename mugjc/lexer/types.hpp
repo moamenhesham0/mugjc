@@ -7,7 +7,9 @@
 #include <limits>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
 namespace mug::lexer {
 
@@ -15,57 +17,31 @@ using Literal = unsigned char;
 using StateId = std::size_t;
 
 inline constexpr StateId TrapState = std::numeric_limits<StateId>::max();
-inline constexpr std::size_t AlphabetSize = 256;
-inline constexpr unsigned char Lambda = 'L';
-
-template <typename E>
-concept CharEnum =
-    std::is_enum_v<E> && std::is_convertible_v<std::underlying_type_t<E>, char>;
-
-template <CharEnum E>
-constexpr bool operator==(char c, E e) noexcept {
-    return c == static_cast<char>(e);
-}
-template <CharEnum E>
-constexpr bool operator==(E e, char c) noexcept {
-    return static_cast<char>(e) == c;
-}
-template <CharEnum E>
-constexpr bool operator!=(char c, E e) noexcept {
-    return c != static_cast<char>(e);
-}
-template <CharEnum E>
-constexpr bool operator!=(E e, char c) noexcept {
-    return static_cast<char>(e) != c;
-}
+inline constexpr std::size_t AlphabetSize =
+    std::numeric_limits<Literal>::max() + 1;
+inline constexpr Literal Lambda = 'L';
 
 namespace rule {
 
-using mug::lexer::CharEnum;
 using mug::lexer::Literal;
 using mug::lexer::StateId;
-using mug::lexer::operator==;
-using mug::lexer::operator!=;
 
 static constexpr unsigned char LAMBDA = 'L';
 
 enum class Symbol {
     kRegularExpression = ':',
     kRegularDefinition = '=',
-    kKleeneStar = '*',
-    kKleenePlus = '+',
-    kAlternation = '|',
-    kRange = '-',
     kLeftSquare = '[',
     kRightSquare = ']',
     kLeftCurly = '{',
     kRightCurly = '}',
-    kLeftParen = '(',
-    kRightParen = ')',
     kEscape = '\\',
+    kUnderscore = '_',
 };
 
 enum class REOperator {
+    kLeftParenthesis = '(',
+    kRightParenthesis = ')',
     kPlus = '+',
     kStar = '*',
     kRange = '-',
@@ -73,17 +49,22 @@ enum class REOperator {
     kAlternate = '|'
 };
 
-enum REOpPrecedence {
-    kPlus,
-    kStar,
-    kRange,
-    kConcatenation,
-    kAlternate,
-};
+inline const std::unordered_map<REOperator, int> REOperators = {
+    {REOperator::kLeftParenthesis, 0},
+    {REOperator::kRightParenthesis, 0},
+    {REOperator::kAlternate, 1},
+    {REOperator::kConcatenation, 2},
+    {REOperator::kStar, 3},
+    {REOperator::kPlus, 3},
+    {REOperator::kRange, 4}};
 
-inline const std::unordered_set<REOperator> REOperators = {
-    REOperator::kPlus, REOperator::kStar, REOperator::kRange,
-    REOperator::kAlternate};
+inline bool IsREOperator(Literal literal) {
+    return REOperators.contains(static_cast<REOperator>(literal));
+}
+
+inline bool HasPrecedence(const REOperator top, const REOperator incoming) {
+    return REOperators.at(top) >= REOperators.at(incoming);
+}
 
 enum class RuleType {
     kRegularStatement,
